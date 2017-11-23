@@ -1,0 +1,66 @@
+---
+title: "Stats Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+In this project, we're using sales data from Safeway Eastern's floral department. This data only shows the flowers/bouqets sold that were bought by Safeway from Intergreen USA. 
+
+
+```{r cars}
+library('plyr')
+setwd("C:/Users/Holex/Desktop/Stats_Project")
+
+#I saved excel file as a txt
+flower_data <- read.table("flower_data.txt", header = TRUE)
+
+#Since there are multiple sales on a given day, I want to aggregate the sales based on the date
+date_net <- aggregate(Net ~ Txn_Date, flower_data,sum)
+date_net <- date_net[order(as.Date(date_net$Txn_Date, "%m/%d/%Y")),]
+
+date_net$Txn_Date <- as.Date(date_net$Txn_Date, format = "%m/%d/%Y")
+
+str(date_net)
+
+#date_net$Txn_Date <- factor(date_net$Txn_Date, labels = format(date_net, "%m/%d/%Y"), ordered = TRUE)
+
+#There are also multiple stores, it would be interesting to see how different stores sell based on the day
+#link to safeway eastern stores
+#https://www.google.com/maps/d/viewer?mid=1SU7aT0QrKqPL-5mGKjwvflXmAz4&hl=en_US&ll=39.02715642805036%2C-76.56616499999996&z=7
+
+store_date_net <- aggregate(Net ~ Txn_Date + Store , flower_data, sum)
+store_date_net <- store_date_net[order(as.Date(store_date_net$Txn_Date, "%m/%d/%Y")),]
+
+plot(date_net$Txn_Date, date_net$Net)
+
+str(date_net)
+
+
+
+
+
+
+```
+
+## Including Plots
+
+```{r}
+date_net3 <- aggregate(Net ~ Txn_Date, flower_data,sum)
+date_net3$Txn_Date <- factor(date_net3$Txn_Date, levels =  date_net3$Txn_Date[order(date_net3$Net)])
+str(date_net3)
+
+date_net3$Txn_Date <- format(format.Date(date_net3))
+
+
+```
+
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
