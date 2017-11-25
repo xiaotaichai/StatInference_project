@@ -11,39 +11,48 @@ In this project, we're using sales data from Safeway Eastern's floral department
 
 ```{r cars}
 library('plyr')
+library('bit64')
+library('dplyr')
+library('reshape2')
+library('ggplot2')
+
 setwd("C:/Users/Holex/Desktop/Stats_Project")
 
 #Sidenote: I saved excel file as a txt before reading it as a table
 flower_data <- read.table("flower_data.txt", header = TRUE)
+
 #line below ensures column is date and ordered
 flower_data$Txn_Date <- as.Date(flower_data$Txn_Date, format = "%m/%d/%Y")
 
 #Since there are multiple sales on a given day, I want to aggregate the sales based on the date
 date_net <- aggregate(Net ~ Txn_Date, flower_data,sum)
 
-#Work to make sure dates are saved in order so they can be plotted nicely
-#date_net <- date_net[order(as.Date(date_net$Txn_Date, "%m/%d/%Y")),]
-#date_net$Txn_Date <- as.Date(date_net$Txn_Date, format = "%m/%d/%Y")
-
 plot(date_net$Txn_Date, date_net$Net)
 
-#There are also multiple stores, it would be interesting to see how different stores sell based on the day
-#link to safeway eastern stores
-#https://www.google.com/maps/d/viewer?mid=1SU7aT0QrKqPL-5mGKjwvflXmAz4&hl=en_US&ll=39.02715642805036%2C-76.56616499999996&z=7
+#read in financial data
+stock_info <- fread("stockdata.csv")
+#change column name so i can do a join
+colnames(date_net)[1] <- "Date"
+combodata <- join(date_net,stock_info, type="right")
+combodata$Volume <- NULL
+#plots the closing price and net for a given day
+data_m <- melt(combodata,id.vars = "Date")
 
-store_date_net2 <- aggregate(Net ~ Txn_Date + Store , flower_data, sum)
-store_date_net2 <- store_date_net[order(as.Date(store_date_net2$Txn_Date, "%m/%d/%Y")),]
+ggplot(data_m, aes(Date,value, col=variable)) + geom_point() + stat_smooth()
 
-str(store_date_net2)
+ggplot()
 
-unique(flower_data$Store, incomparables = FALSE)
+
+str(data_m)
+
+
 
 
 
 
 ```
 
-## Including Plots
+#Testing code here
 
 ```{r}
 #date_net3 <- aggregate(Net ~ Txn_Date, flower_data,sum)
@@ -51,6 +60,14 @@ unique(flower_data$Store, incomparables = FALSE)
 #str(date_net3)
 
 #date_net3$Txn_Date <- format(format.Date(date_net3))
+
+#There are also multiple stores, it would be interesting to see how different stores sell based on the day
+#link to safeway eastern stores
+#https://www.google.com/maps/d/viewer?mid=1SU7aT0QrKqPL-5mGKjwvflXmAz4&hl=en_US&ll=39.02715642805036%2C-76.56616499999996&z=7
+
+
+store_date_net2 <- aggregate(Net ~ Txn_Date + Store , flower_data, sum)
+store_date_net2 <- store_date_net[order(as.Date(store_date_net2$Txn_Date, "%m/%d/%Y")),]
 
 
 ```
@@ -84,6 +101,7 @@ meteo_distance(station_data, lat, long, units = "deg", radius = NULL, limit = NU
 You can also embed plots, for example:
 
 ```{r pressure, echo=FALSE}
+
 meteo_distance(station_data, 38.901335, -76.98042, units = "deg", radius = NULL, limit = 5)
 ```
 
