@@ -35,16 +35,16 @@ stock_info <- fread("stockdata.csv")
 colnames(date_net)[1] <- "Date"
 combodata <- join(date_net,stock_info, type="right")
 combodata$Volume <- NULL
+combodata$`Adj Close` <- NULL
 #plots the closing price and net for a given day
 data_m <- melt(combodata,id.vars = "Date")
-
 ggplot(data_m, aes(Date,value, col=variable)) + geom_point() + stat_smooth()
 
-ggplot()
+#next step to normalize data
 
-
-str(data_m)
-
+#plot flower sales against close of s&p
+plot(combodata$Close, combodata$Net)
+plot(combodata$Open, combodata$Net)
 
 
 
