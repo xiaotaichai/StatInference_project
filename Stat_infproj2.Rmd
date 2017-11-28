@@ -20,31 +20,44 @@ setwd("C:/Users/Holex/Desktop/Stats_Project")
 
 #Sidenote: I saved excel file as a txt before reading it as a table
 flower_data <- read.table("flower_data.txt", header = TRUE)
+flower_data_apr <- fread("april_june.csv", header = TRUE)
+
 
 #line below ensures column is date and ordered
 flower_data$Txn_Date <- as.Date(flower_data$Txn_Date, format = "%m/%d/%Y")
+flower_data_apr$Day <- as.Date(flower_data_apr$Day, format = "%m/%d/%Y")
+
 
 #Since there are multiple sales on a given day, I want to aggregate the sales based on the date
 date_net <- aggregate(Net ~ Txn_Date, flower_data,sum)
+colnames(flower_data_apr)[6] <- "Net"
+date2_net <- aggregate(Net ~ Day, flower_data_apr,sum)
 
-plot(date_net$Txn_Date, date_net$Net)
+#renaming columns to make joining easier later
+#colnames(date2_net)[2] <- "Net"
+colnames(date2_net)[1] <- "Date"
 
 #read in financial data
 stock_info <- fread("stockdata.csv")
+stock_info2 <- fread("april_june_finance.csv")
+stock_info2$Date <- as.Date(stock_info2$Date, format = "%m/%d/%Y")
 #change column name so i can do a join
 colnames(date_net)[1] <- "Date"
 combodata <- join(date_net,stock_info, type="right")
-combodata$Volume <- NULL
-combodata$`Adj Close` <- NULL
+combodata2 <- join(date2_net, stock_info2, type = "right")
+#combo3 <- merge(x = date2_net, y = stock_info2, by = "Date", all= TRUE) 
 #plots the closing price and net for a given day
 data_m <- melt(combodata,id.vars = "Date")
 ggplot(data_m, aes(Date,value, col=variable)) + geom_point() + stat_smooth()
 
-#next step to normalize data
+
 
 #plot flower sales against close of s&p
 plot(combodata$Close, combodata$Net)
 plot(combodata$Open, combodata$Net)
+
+#new plot
+plot(combodata2$Open,combodata2$Net)
 
 
 
