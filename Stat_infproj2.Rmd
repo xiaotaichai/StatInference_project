@@ -39,12 +39,14 @@ colnames(date2_net)[1] <- "Date"
 
 #read in financial data
 stock_info <- fread("stockdata.csv")
+
 stock_info2 <- fread("april_june_finance.csv")
 stock_info2$Date <- as.Date(stock_info2$Date, format = "%m/%d/%Y")
 #change column name so i can do a join
 colnames(date_net)[1] <- "Date"
 combodata <- join(date_net,stock_info, type="right")
 combodata2 <- join(date2_net, stock_info2, type = "right")
+combodata2$Date <- as.character(combodata2$Date)
 #combo3 <- merge(x = date2_net, y = stock_info2, by = "Date", all= TRUE) 
 #plots the closing price and net for a given day
 data_m <- melt(combodata,id.vars = "Date")
@@ -59,8 +61,15 @@ plot(combodata$Open, combodata$Net)
 #new plot
 plot(combodata2$Open,combodata2$Net)
 
+#bind 2 data frames (data from april-june and sep-oct)
+results <- rbind(combodata2, combodata)
 
-
+plot(results$Open, results$Net)
+plot(results$Close, results$Net)
+plot(results$High, results$Net)
+plot(results$`Adj Close`, results$Net)
+plot(results$Low, results$Net)
+plot(results$Volume, results$Net)
 
 
 ```
