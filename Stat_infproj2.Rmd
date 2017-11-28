@@ -71,6 +71,10 @@ plot(results$`Adj Close`, results$Net)
 plot(results$Low, results$Net)
 plot(results$Volume, results$Net)
 
+l.model <- lm(results$Net ~ results$`Adj Close`)
+summary(l.model)
+#plot against residuals
+plot(l.model$fitted.values, l.model$residuals)
 
 ```
 
