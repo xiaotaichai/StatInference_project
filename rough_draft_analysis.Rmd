@@ -91,6 +91,8 @@ The scale location checks for homoscedasticity, the assumption of equal variance
 The residual vs leverage plot helps to find influential cases, values in the top right corner would be 
 an influential outlier, we don't seem to have any in this case. 
 
+Since the scatter plot of net sales and the S&P close seems to curve downward near the right of the graph, and because the q-q plot shows that the error terms at the right end are farther from the dotted line, it may be a good idea to perform a transformation on the predictor variable to improve the linear fit of the data. 
+
 
 
 #Testing code here
