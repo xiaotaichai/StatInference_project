@@ -86,8 +86,10 @@ One of the assumptions of linearity is that the error terms are independent and 
 
 The normal q-q plot is used to see if the error terms are normally distributed, if the points lie along the dotted line this is an indicator that the error terms are normally distributed. This q-q plot looks light tailed and there are outliers at the right end which are concerning although most points do lie on the dotted line between -1 and 1.
 
-The scale location checks for homoscedasticity, the assumption of equal variance. 
+The scale location checks for homoscedasticity, the assumption of equal variance. In this case the points look spread out.
 
+The residual vs leverage plot helps to find influential cases, values in the top right corner would be 
+an influential outlier, we don't seem to have any in this case. 
 
 
 
