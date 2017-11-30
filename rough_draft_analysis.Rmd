@@ -9,7 +9,7 @@ We're interested in seeing the relationships between several predictor variables
 One of these variables is the closing price of the S&P 500 for a given day. We chose this variable because the S&P 500 includes stocks from large companies that sell consumer staples like Johnson and Johnson, Heinz, Colgate, and Coca-Cola. Many of their products are sold in supermarkets, so our reasoning is that the S&P will reflect the movement in supermarkets. Similarly, since the flowers in the data are being sold in supermarkets this could be a good predictor for flower sales. 
 
 
-
+The code below imports the flower sales data and combines it with the S&P data.
 ```{r cars}
 library('plyr')
 library('bit64')
@@ -50,29 +50,25 @@ combodata <- join(date_net,stock_info, type="right")
 combodata2 <- join(date2_net, stock_info2, type = "right")
 combodata2$Date <- as.character(combodata2$Date)
 #combo3 <- merge(x = date2_net, y = stock_info2, by = "Date", all= TRUE) 
-#plots the closing price and net for a given day
-data_m <- melt(combodata,id.vars = "Date")
-ggplot(data_m, aes(Date,value, col=variable)) + geom_point() + stat_smooth()
-
-
-
-#plot flower sales against close of s&p
-plot(combodata$Close, combodata$Net)
-plot(combodata$Open, combodata$Net)
-
-#new plot
-plot(combodata2$Open,combodata2$Net)
 
 #bind 2 data frames (data from april-june and sep-oct)
 results <- rbind(combodata2, combodata)
 
+```
+Next, we looked at plots of flower sales against the S&P open, close, high, adjusted close, low, and volume individually to see which plots looked linear and could make it to the next stage of the data analysis process. 
+
+```{r}
 plot(results$Open, results$Net)
 plot(results$Close, results$Net)
 plot(results$High, results$Net)
 plot(results$`Adj Close`, results$Net)
 plot(results$Low, results$Net)
 plot(results$Volume, results$Net)
+```
 
+
+
+```{r}
 l.model <- lm(results$Net ~ results$`Adj Close`)
 summary(l.model)
 #plot against residuals
@@ -81,8 +77,6 @@ qqnorm(rstandard(l.model))
 qqline(rstandard(l.model))
 plot(l.model)
 #pollen count for day try other predictor variables
-
-
 ```
 
 #Testing code here
