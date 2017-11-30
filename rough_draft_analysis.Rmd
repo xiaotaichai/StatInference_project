@@ -55,7 +55,7 @@ combodata2$Date <- as.character(combodata2$Date)
 results <- rbind(combodata2, combodata)
 
 ```
-Next, we looked at plots of flower sales against the S&P open, close, high, adjusted close, low, and volume individually to see which plots looked linear and could make it to the next stage of the data analysis process. 
+Next, we looked at plots of flower sales against the S&P open, close, high, adjusted close, low, and volume individually to see which plots looked linear and could make it to the next stage of the data analysis process.
 
 ```{r}
 plot(results$Open, results$Net)
@@ -65,19 +65,31 @@ plot(results$`Adj Close`, results$Net)
 plot(results$Low, results$Net)
 plot(results$Volume, results$Net)
 ```
-
+The relatiopnship between net sales and adjusted close and net sales and open looks linear based on the scatterplot. The next step is to run diagnostics to check if the assumptions of linearity hold.
 
 
 ```{r}
-l.model <- lm(results$Net ~ results$`Adj Close`)
-summary(l.model)
-#plot against residuals
-plot(l.model$fitted.values, l.model$residuals)
-qqnorm(rstandard(l.model))
-qqline(rstandard(l.model))
-plot(l.model)
-#pollen count for day try other predictor variables
+l.model_close <- lm(results$Net ~ results$`Adj Close`)
+summary(l.model_close)
+#plots
+plot(l.model_close)
 ```
+The plot of the residuals shows that 
+
+```{r}
+l.model_open <- lm(results$Net ~ results$Open)
+summary(l.model_open)
+#plots
+plot(l.model_open)
+```
+One of the assumptions of linearity is that the error terms are independent and not correlated. The plot of the residuals shows that there isn't a significant pattern between the residuals and fitted values but they aren't very spread and random either. There are also a few outliers. 
+
+The normal q-q plot is used to see if the error terms are normally distributed, if the points lie along the dotted line this is an indicator that the error terms are normally distributed. This q-q plot looks light tailed and there are outliers at the right end which are concerning although most points do lie on the dotted line between -1 and 1.
+
+The scale location checks for homoscedasticity, the assumption of equal variance. 
+
+
+
 
 #Testing code here
 
