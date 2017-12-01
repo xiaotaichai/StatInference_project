@@ -44,7 +44,7 @@ library('data.table')
 library('leaps')
 library('minpack.lm')
 
-#setwd("C:/Users/Holex/Desktop/Stats_Project")
+setwd("C:/Users/Holex/Desktop/Stats_Project")
 
 #Sidenote: I saved excel file as a txt before reading it as a table
 flower_data <- read.table("flower_data.txt", header = TRUE)
@@ -105,14 +105,7 @@ summary(l.model_close)
 #plots
 plot(l.model_close)
 ```
-The plot of the residuals shows that 
 
-```{r}
-l.model_open <- lm(results$Net ~ results$Open)
-summary(l.model_open)
-#plots
-plot(l.model_open)
-```
 One of the assumptions of linearity is that the error terms are independent and not correlated. The plot of the residuals shows that there isn't a significant pattern between the residuals and fitted values but they aren't very spread and random either. There are also a few outliers. 
 
 The normal q-q plot is used to see if the error terms are normally distributed, if the points lie along the dotted line this is an indicator that the error terms are normally distributed. This q-q plot looks light tailed and there are outliers at the right end which are concerning although most points do lie on the dotted line between -1 and 1.
