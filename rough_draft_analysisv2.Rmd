@@ -258,6 +258,27 @@ plot(fit_hershey2)
 It seems the polynomial model fits much better than the linear model. all coefficients are significant and 17.97% of the variance can be explained by the model.
 
 
+```{r}
+all_data <- fread("all_data.csv", header = TRUE)
+
+fullmodel <- lm(Net ~ Close + Open + avg7_day+ avg30_day+avg_temp + sum_precip + Oil + Hershey, data = all_data)
+summary(fullmodel)
+
+plot(fullmodel)
+```
+
+ 
+```{r}
+stepAIC(fullmodel, direction = "backward")
+```
+
+```{r}
+newmodel <- lm(Net ~ Close + Oil, data = all_data)
+summary(newmodel)
+```
+
+
+
 ##Conclusions
 
 Current data-set is sparse and some of the association that may exist, are not strongly apparent because of it. Currently we are in the process or trying to acquire more data. with couple of years worth of data, we could investigate if there are any associations with holidays or other seasonal trends. We would also be able to apply time series based methods, once we learn to apply them. 
