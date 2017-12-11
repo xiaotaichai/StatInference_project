@@ -34,7 +34,7 @@ Hershey stock price data was http://www.nasdaq.com/symbol/hsy/historical
 ##Data Analysis 
 
 The code below imports the flower sales data and combines it with the S&P data.
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 library('plyr')
 library('bit64')
 library('dplyr')
@@ -216,19 +216,7 @@ summary(fit_oil2)
 #plots
 plot(fit_oil2)
 ```
-It seems the polynomial model fits the data better than the linear model since the adjusted r-squared is higher than the linear model's. Also, all coefficients are siginificant. From the QQ plot, the residuals have a positively skewed distribution, so we could also try log regression model.
-
-```{r}
-fit_oil3 <- lm(log(Net) ~ `Price.Close`, data = oil_combo)
-summary(fit_oil3)
-
-#plots
-plot(fit_oil3)
-
-```
-
-
-Compare the linear regression model, polynomial model, and log regression model, we found that the log regression model has a highest adjusted R-squared value and has a lowest p-value.
+It seems the polynomial model fits the data better than the linear model since the adjusted r-squared is higher than the linear model's. Also, all coefficients are siginificant. From the QQ plot, the residuals have a slight positively skewed distribution, however, the distribution is not strongly skewed so we don't need to make a transformation of the data. Compare the linear regression model and the polynomial regression model, we found that the polynomial regression model has a higher adjusted R-squared value and has a lower p-value.
 
 
 We are also interensted in the the relationship between chocolate industry performance and flower sales since chocolate and flowers can be complementary goods. We expect a positive association between chocolate sales and flower sales. The Hershey Company is the largest chocolate manufacturer in North America and has 21.2% market share in the chocolate industry, so we are using Hershey's data. Becuase we are not able to get Hershey's daily sales data, we are comparing Hershey's stock price to the flower sales.
@@ -259,7 +247,15 @@ summary(fit_hershey)
 #plots
 plot(fit_hershey)
 ```
-From both the plots and the model, there isn't a strong evidence showing that there's a relationship between Hershey's stock price and the flower sales.
+From both the plots and the model, there isn't a strong evidence showing that there's a linear relationship between Hershey's stock price and the flower sales. However, the plot looks there's a slight polynomial relationship between stock price and flower sales. So let's try polynomial model.
+
+```{r}
+fit_hershey2 <- lm(Net ~ I(open) + I(open^2), data =hershey_combo)
+summary(fit_hershey2)
+#plots
+plot(fit_hershey2)
+```
+It seems the polynomial model fits much better than the linear model. all coefficients are significant and 17.97% of the variance can be explained by the model.
 
 
 ##Conclusions
