@@ -277,7 +277,35 @@ newmodel <- lm(Net ~ Close + Oil, data = all_data)
 summary(newmodel)
 ```
 
+```{r}
+plot(newmodel)
 
+
+```
+
+```{r}
+training_set <- all_data[1:43,]
+
+test_set <- all_data[44:53,c(2,6, 15)]
+
+
+training_model <- lm(Net ~ Close + Oil, data = training_set)
+summary(training_model)
+anova(training_model)
+
+predictions <- predict(training_model, test_set[,c(2,3)])
+
+delta <- test_set[,1] - predictions
+
+(msep <- sum((delta)^2)/length(test_set[,1]))
+
+
+```
+
+```{r}
+pairs(all_data[c(6,15)])
+```
+The training set doesn't predict the value for the test set well. This may be because of the seasonality of the flower industry. 
 
 ##Conclusions
 
