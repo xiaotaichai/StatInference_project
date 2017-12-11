@@ -264,16 +264,12 @@ It seems the polynomial model fits much better than the linear model. all coeffi
 
 ```{r}
 all_data <- fread("all_data.csv", header = TRUE)
-all_data$Date <- as.Date(all_data$Date, format = "%m/%d/%Y")
 
-fullmodel <- lm(Net ~ Close +Date+ Open + avg7_day+ avg30_day+avg_temp + sum_precip + Oil + Hershey, data = all_data)
+fullmodel <- lm(Net ~ Close + Open + avg7_day+ avg30_day+avg_temp + sum_precip + Oil + Hershey, data = all_data)
 summary(fullmodel)
-<<<<<<< HEAD
-str(all_data)
-=======
 anova(fullmodel)
->>>>>>> 62b6c56eb9a5c428fb1aa7c72eac4c3ad21b59a3
 
+plot(fullmodel)
 ```
 
  
@@ -308,15 +304,11 @@ delta <- test_set[,1] - predictions
 (msep <- sum((delta)^2)/length(test_set[,1]))
 
 ```
-The training set doesn't predict the value for the test set well. This may be because of the seasonality of the flower industry. 
-
 
 ```{r}
-pairs(all_data[,c(6,15)])
-vif(newmodel)
-
+pairs(all_data[c(6,15)])
 ```
-There is moderate evidence of multicolinearity between the closing price of the S&P 500 and the price of crude oil. 
+The training set doesn't predict the value for the test set well. This may be because of the seasonality of the flower industry. 
 
 ##Conclusions
 
