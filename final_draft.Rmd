@@ -1,0 +1,251 @@
+---
+title: "Statistical Inference Project"
+Name: Xiaotai Chai, Lilianne Raud, Stephanie Rivera
+output: html_document
+---
+##Introduction
+
+In this project, we're using sales data from Safeway Eastern's floral department. This data only shows the flowers/bouquets sold at Safeway Eastern supermarkets that were bought from Intergreen USA, a flower importing company which supplies different supermarkets across the US. There are a total of 9 distinct products sold and the sales occurred between April and October 2017. 
+
+##Literature Review/ Background and Methods 
+
+##Research Question(s) 
+
+We're interested in seeing the relationships between several predictor variables and sales to determine if there's a particular independent variable that drives or hurts flower sales. 
+One of these variables is the closing price of the S&P 500 for a given day. We chose this variable because the S&P 500 includes stocks from large companies that sell consumer staples like Johnson and Johnson, Heinz, Colgate, and Coca-Cola. Many of their products are sold in supermarkets, so our reasoning is that the S&P will reflect the movement in supermarkets. Similarly, since the flowers in the data are being sold in supermarkets this could be a good predictor for flower sales. 
+Oil price is another variable that we expect to have a negative relationship with flower sales. 
+Chocolate selling
+Weather, average temperature, wind speed, precipitation 
+
+##Data Collection & Experimental Design
+
+Data was provided by Safeway Eastern
+
+Weather Data source was https://www.wunderground.com/history/airport/KDCA
+
+S&P 500 data source was https://finance.yahoo.com/quote/%5EGSPC/history?period1=1480482000&period2=1512018000&interval=1d&filter=history&frequency=1d
+
+Oil price source was http://www.fedprimerate.com/crude-oil-price-history.htm
+
+Hershey stock price data was http://www.nasdaq.com/symbol/hsy/historical
+
+```{r, include=FALSE}
+
+library('plyr')
+library('bit64')
+library('dplyr')
+library('reshape2')
+library('ggplot2')
+library('data.table')
+library('leaps')
+library('minpack.lm')
+
+```
+
+
+
+
+##Data Analysis 
+
+The code below imports the flower sales data and combines it with the S&P data.
+```{r}
+
+
+setwd("C:/Users/Holex/Desktop/Stats_Project")
+
+#Sidenote: I saved excel file as a txt before reading it as a table
+flower_data <- read.table("flower_data.txt", header = TRUE)
+flower_data_apr <- fread("april_june.csv", header = TRUE)
+
+
+#line below ensures column is date and ordered
+flower_data$Txn_Date <- as.Date(flower_data$Txn_Date, format = "%m/%d/%Y")
+flower_data_apr$Day <- as.Date(flower_data_apr$Day, format = "%m/%d/%Y")
+
+
+#Since there are multiple sales on a given day, I want to aggregate the sales based on the date
+date_net <- aggregate(Net ~ Txn_Date, flower_data,sum)
+colnames(flower_data_apr)[6] <- "Net"
+date2_net <- aggregate(Net ~ Day, flower_data_apr,sum)
+
+#renaming columns to make joining easier later
+#colnames(date2_net)[2] <- "Net"
+colnames(date2_net)[1] <- "Date"
+
+#read in financial data
+stock_info <- fread("stockdata.csv")
+
+stock_info2 <- fread("april_june_finance.csv")
+stock_info2$Date <- as.Date(stock_info2$Date, format = "%m/%d/%Y")
+#change column name so i can do a join
+colnames(date_net)[1] <- "Date"
+combodata <- join(date_net,stock_info, type="right")
+combodata2 <- join(date2_net, stock_info2, type = "right")
+combodata2$Date <- as.character(combodata2$Date)
+#combo3 <- merge(x = date2_net, y = stock_info2, by = "Date", all= TRUE) 
+
+#bind 2 data frames (data from april-june and sep-oct)
+results <- rbind(combodata2, combodata)
+
+
+```
+
+
+Next, we looked at plots of flower sales against the S&P open, close, high, adjusted close, low, and volume individually to see which plots looked linear and could make it to the next stage of the data analysis process.
+
+```{r}
+par(mfrow = c(3,2))
+plot(results$Open, results$Net)
+plot(results$Close, results$Net)
+plot(results$High, results$Net)
+plot(results$`Adj Close`, results$Net)
+plot(results$Low, results$Net)
+plot(results$Volume, results$Net)
+```
+
+The relationship between net sales and adjusted close and net sales and open looks linear based on the scatter-plot. The next step is to run diagnostics to check if the assumptions of linearity hold.
+
+
+```{r}
+l.model_close <- lm(results$Net ~ results$`Adj Close`)
+summary(l.model_close)
+#plots
+plot(l.model_close)
+```
+
+One of the assumptions of linearity is that the error terms are independent and not correlated. The plot of the residuals shows that there isn't a significant pattern between the residuals and fitted values but they aren't very spread and random either. There are also a few outliers. 
+
+The normal q-q plot is used to see if the error terms are normally distributed, if the points lie along the dotted line this is an indicator that the error terms are normally distributed. This q-q plot looks light tailed and there are outliers at the right end which are concerning although most points do lie on the dotted line between -1 and 1.
+
+The scale location checks for homoscedasticity, the assumption of equal variance. In this case the points look spread out.
+
+The residual vs leverage plot helps to find influential cases, values in the top right corner would be 
+an influential outlier, we don't seem to have any in this case. 
+
+Since the scatter plot of net sales and the S&P close seems to curve downward near the right of the graph, and because the q-q plot shows that the error terms at the right end are farther from the dotted line, it may be a good idea to perform a transformation on the predictor variable to improve the linear fit of the data. 
+
+Next we combine Net sales with some weather data. 
+
+```{r}
+net_weather <- fread("Enhanced_weather_movingavg.csv")
+
+par(mfrow = c(2,2))
+plot(net_weather$Net,net_weather$avg_temp)
+plot(net_weather$Net,net_weather$avg_pressure)
+plot(net_weather$Net,net_weather$avg_wind)
+plot(net_weather$Net,net_weather$sum_precip)
+
+```
+
+The plots do not seem to show any linear relationship, but we will look if combining some variables perhaps will give us some predictive relationships. 
+
+
+```{r}
+attach(net_weather)
+
+allpossreg <- regsubsets(Net ~ avg_temp + avg_pressure + avg_wind + 
+    sum_precip, nbest = 6, data = net_weather)
+
+aprout <- summary(allpossreg)
+
+with(aprout, round(cbind(which, rsq, adjr2, cp, bic), 3))
+
+#I will be adding few more plots
+
+```
+
+It is clear from the results that the strongest association is between net sales and average wind, but the score is so low, that it can all be attributed to noise. 
+
+```{r}
+attach(net_weather)
+
+par(mfrow = c(1,2))
+plot(net_weather$Net,net_weather$avg7_day)
+plot(net_weather$Net,net_weather$avg30_day)
+
+allpossreg1 <- regsubsets(Net ~ avg7_day + avg30_day
+, nbest = 6, data = net_weather)
+
+aprout1 <- summary(allpossreg1)
+
+with(aprout1, round(cbind(which, rsq, adjr2, cp, bic), 3))
+
+#I will be adding few more plots
+
+```
+
+Here we are looking which S&P daily trailing average close would be better predictive variable, 7 day moving average or 30 day moving average. From the model, it seems that 7 day trailing closing average is better, based on all indicators, rsq, adjr2, cp and bic. 
+```{r}
+# SP500 DATA?
+```
+
+we are looking for the potential relationship between oil price and flower sales. Since transportation cost would affect flower price, which will influnce flower sales, we expect there's a negative relationship between oil price and flower sales. We use the Crude oil price data, since crude oil is refined to produce gasoline. 
+```{r}
+#read in oil price data
+oil_info <- fread("oil_price.csv")
+oil_info$Date <- as.Date(oil_info$Date, format = "%m/%d/%Y")
+
+#change column name so i can do a join
+date3_net <- merge(date_net, date2_net, all = TRUE)
+oil_combo <- join(date3_net,oil_info, type="right")
+oil_combo$Date <- as.character(oil_combo$Date)
+
+```
+
+Let's look at the plot of flower sales against oil price.
+```{r}
+plot(oil_combo$`Price@Close`,oil_combo$Net)
+```
+There seems to be a negative relationship between flower sales against oil price. The three points that are outliers are on 5/5, 9/22, and 9/29, which could be due to other factoers such as weather and season. Now let's see if there's a linear relationshp between oil price and flower sales.
+
+
+```{r}
+# oil_combo2 <- na.omit(oil_combo)
+fit_oil1 <- lm(Net ~ `Price@Close`, data = oil_combo)
+summary(fit_oil1)
+
+fit_oil2 <- lm(log(Net) ~ `Price@Close`, data = oil_combo)
+summary(fit_oil2)
+
+#plots
+plot(fit_oil1)
+plot(fit_oil2)
+
+```
+Compare the linear regression model and log regression model, we found that the log regression model has a higher adjusted R-squared value has a lower p-value.
+
+
+We are also interensted in the the relationship between chocolate industry performance and flower sales since chocolate and flowers can be complementary goods. We expect a positive association between chocolate sales and flower sales. The Hershey Company is the largest chocolate manufacturer in North America and has 21.2% market share in the chocolate industry, so we are using Hershey's data. Becuase we are not able to get Hershey's daily sales data, we are comparing Hershey's stock price to the flower sales.
+```{r}
+#read in hershey data
+hershey_info <- fread("hershey.csv")
+hershey_info$Date <- as.Date(hershey_info$Date, format = "%m/%d/%Y")
+
+#change column name so i can do a join
+hershey_combo <- join(date3_net,hershey_info, type="left")
+hershey_combo$Date <- as.character(hershey_combo$Date)
+```
+
+Let's look at the plot of flower sales against Hershey stock price.
+```{r}
+par(mfrow = c(3,2))
+plot(hershey_combo$open, hershey_combo$Net)
+plot(hershey_combo$close, hershey_combo$Net)
+plot(hershey_combo$high, hershey_combo$Net)
+plot(hershey_combo$low, hershey_combo$Net)
+plot(hershey_combo$volume, hershey_combo$Net)
+```
+
+Let's build the linear model
+```{r}
+fit_hershey <- lm(hershey_combo$Net ~ hershey_combo$open)
+summary(fit_hershey)
+#plots
+plot(fit_hershey)
+```
+From both the plots and the model, there isn't a strong evidence showing that there's a relationship between Hershey's stock price and the flower sales.
+
+
+##Conclusions
+
+Current data-set is sparse and some of the association that may exist, are not strongly apparent because of it. Currently we are in the process or trying to acquire more data. with couple of years worth of data, we could investigate if there are any associations with holidays or other seasonal trends. We would also be able to apply time series based methods, once we learn to apply them. 
