@@ -17,6 +17,7 @@ Oil price is another variable that we expect to have a negative relationship wit
 Chocolate selling
 Weather, average temperature, wind speed, precipitation 
 
+
 ##Data Collection & Experimental Design
 
 Data was provided by Safeway Eastern
@@ -301,7 +302,6 @@ predictions <- predict(training_model, test_set[,c(2,3)])
 delta <- test_set[,1] - predictions
 
 (msep <- sum((delta)^2)/length(test_set[,1]))
-
 
 ```
 
