@@ -33,7 +33,6 @@ Hershey stock price data was http://www.nasdaq.com/symbol/hsy/historical
 
 ##Data Analysis 
 
-The code below imports the flower sales data and combines it with the S&P data.
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 library('plyr')
 library('bit64')
@@ -48,6 +47,8 @@ library('xts')
 project_dir <- getwd()
 setwd(project_dir)
 ```
+
+The code below imports the flower sales data and combines it with the S&P data.
 
 ```{r}
 #Sidenote: I saved excel file as a txt before reading it as a table
@@ -106,6 +107,7 @@ The relationship between net sales and adjusted close and net sales and open loo
 ```{r}
 l.model_close <- lm(results$Net ~ results$`Adj Close`)
 summary(l.model_close)
+anova(l.model_close)
 #plots
 plot(l.model_close)
 ```
@@ -171,11 +173,6 @@ with(aprout1, round(cbind(which, rsq, adjr2, cp, bic), 3))
 
 ```
 
-Here we are looking which S&P daily trailing average close would be better predictive variable, 7 day moving average or 30 day moving average. From the model, it seems that 7 day trailing closing average is better, based on all indicators, rsq, adjr2, cp and bic. 
-```{r}
-# SP500 DATA?
-```
-
 we are looking for the potential relationship between oil price and flower sales. Since transportation cost would affect flower price, which will influnce flower sales, we expect there's a negative relationship between oil price and flower sales. We use the Crude oil price data, since crude oil is refined to produce gasoline. 
 ```{r}
 #read in oil price data
@@ -204,6 +201,7 @@ There seems to be a negative relationship between flower sales against oil price
 # linear model
 fit_oil1 <- lm(Net ~ `Price.Close`, data = oil_combo)
 summary(fit_oil1)
+anova(fit_oil1)
 
 #plots
 plot(fit_oil1)
@@ -212,6 +210,7 @@ For the linear model, the price is significant. However, only 7.83% of the varia
 ```{r}
 fit_oil2 <- lm(Net ~ I(`Price.Close`)+ I(`Price.Close`^2), data = oil_combo)
 summary(fit_oil2)
+anova(fit_oil2)
 
 #plots
 plot(fit_oil2)
@@ -244,6 +243,8 @@ Let's build the linear model
 ```{r}
 fit_hershey <- lm(hershey_combo$Net ~ hershey_combo$open)
 summary(fit_hershey)
+anova(fit_hershey)
+
 #plots
 plot(fit_hershey)
 ```
@@ -252,6 +253,8 @@ From both the plots and the model, there isn't a strong evidence showing that th
 ```{r}
 fit_hershey2 <- lm(Net ~ I(open) + I(open^2), data =hershey_combo)
 summary(fit_hershey2)
+anova(fit_hershey2)
+
 #plots
 plot(fit_hershey2)
 ```
@@ -263,6 +266,7 @@ all_data <- fread("all_data.csv", header = TRUE)
 
 fullmodel <- lm(Net ~ Close + Open + avg7_day+ avg30_day+avg_temp + sum_precip + Oil + Hershey, data = all_data)
 summary(fullmodel)
+anova(fullmodel)
 
 plot(fullmodel)
 ```
@@ -279,10 +283,9 @@ summary(newmodel)
 
 ```{r}
 plot(newmodel)
-
-
 ```
 
+Now we divide the whole dataset into two parts - training_set and test_set. The training set is from 4/5 to 6/6 and the test set is from 9/20 to 10/3. 
 ```{r}
 training_set <- all_data[1:43,]
 
