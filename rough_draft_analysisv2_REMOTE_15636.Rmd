@@ -44,9 +44,6 @@ library('data.table')
 library('leaps')
 library('minpack.lm')
 library('xts')
-library('lmtest')
-library('onewaytests')
-library('car')
 
 project_dir <- getwd()
 setwd(project_dir)
@@ -267,16 +264,12 @@ It seems the polynomial model fits much better than the linear model. all coeffi
 
 ```{r}
 all_data <- fread("all_data.csv", header = TRUE)
-all_data$Date <- as.Date(all_data$Date, format = "%m/%d/%Y")
 
-fullmodel <- lm(Net ~ Close +Date+ Open + avg7_day+ avg30_day+avg_temp + sum_precip + Oil + Hershey, data = all_data)
+fullmodel <- lm(Net ~ Close + Open + avg7_day+ avg30_day+avg_temp + sum_precip + Oil + Hershey, data = all_data)
 summary(fullmodel)
-
-str(all_data)
-
 anova(fullmodel)
 
-
+plot(fullmodel)
 ```
 
  
@@ -311,46 +304,12 @@ delta <- test_set[,1] - predictions
 (msep <- sum((delta)^2)/length(test_set[,1]))
 
 ```
-The training set doesn't predict the value for the test set well. This may be because of the seasonality of the flower industry. 
-
 
 ```{r}
-
-
-pairs(all_data[,c(6,15)])
-#test for multicolinearity between predictors
-vif(newmodel)
-#test for normality 
-shapiro.test(residuals(newmodel))
-
-#test for heteroskedacity
-df <- data.frame(x = all_data$Oil, y = all_data$Net, Oil = ifelse(all_data$Oil <= median(all_data$Oil), "small", "large"))
-
-bf.test(y ~ Oil, data = df)
-
-df2 <- data.frame(x = all_data$Close, y = all_data$Net, Close = ifelse(all_data$Close <= median(all_data$Close), "small", "large"))
-
-bf.test(y ~ Close, data = df2)
-
-#check for correlated errors 
-plot(1:length(all_data$Date), residuals(newmodel))
-durbinWatsonTest(newmodel)
-
+pairs(all_data[c(6,15)])
 ```
-There is moderate evidence of multicolinearity between the closing price of the S&P 500 and the price of crude oil. 
-
-Shapiro-Wilk test for normality rejects null hypothesis that errors are normally distributed. 
-
-This lead us to use the Brown-Forsythe test to test for heteroskedacity, which works well when the normality assumption is violated. The p-value for the price of crude oil was not statistically significant so we conclude that the errors have constant variance. 
-The p-value for the S&P Close was statistically significant so the variance of the errors are not equal in this case. 
-
-The time series plot of the error terms show a pattern and suggests they may be correlated. The Durbin-Watson Test supports this conclusion with a p-value of 0.004 we can reject the null hypothesis that the error terms are not correlated. 
-
-
-
-
-
+The training set doesn't predict the value for the test set well. This may be because of the seasonality of the flower industry. 
 
 ##Conclusions
 
-Current data-set is sparse and some of the association that may exist, are not strongly apparent because of it. Currently we are in the process or trying to acquire more data. with couple of years worth of data, we could investigate if there are any associations with holidays or other seasonal trends. We would also be able to apply time series based methods, once we learn to apply them. After running informal and formal diagnostics on our linear model, we conclude that a linear model may not be the best for this data. Our tests showed evidence of multicollinearity in the predictor variables, a violation of the normality assumption and constant variance, and the errors are correlated. We'd like to revisit this data set in the future when we have more observations and have learned time-series modeling. 
+Current data-set is sparse and some of the association that may exist, are not strongly apparent because of it. Currently we are in the process or trying to acquire more data. with couple of years worth of data, we could investigate if there are any associations with holidays or other seasonal trends. We would also be able to apply time series based methods, once we learn to apply them. 

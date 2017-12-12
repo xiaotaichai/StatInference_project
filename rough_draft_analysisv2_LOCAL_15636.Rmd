@@ -17,7 +17,6 @@ Oil price is another variable that we expect to have a negative relationship wit
 Chocolate selling
 Weather, average temperature, wind speed, precipitation 
 
-
 ##Data Collection & Experimental Design
 
 Data was provided by Safeway Eastern
@@ -34,6 +33,7 @@ Hershey stock price data was http://www.nasdaq.com/symbol/hsy/historical
 
 ##Data Analysis 
 
+The code below imports the flower sales data and combines it with the S&P data.
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 library('plyr')
 library('bit64')
@@ -44,15 +44,10 @@ library('data.table')
 library('leaps')
 library('minpack.lm')
 library('xts')
-library('lmtest')
-library('onewaytests')
-library('car')
 
 project_dir <- getwd()
 setwd(project_dir)
 ```
-
-The code below imports the flower sales data and combines it with the S&P data.
 
 ```{r}
 #Sidenote: I saved excel file as a txt before reading it as a table
@@ -111,7 +106,6 @@ The relationship between net sales and adjusted close and net sales and open loo
 ```{r}
 l.model_close <- lm(results$Net ~ results$`Adj Close`)
 summary(l.model_close)
-anova(l.model_close)
 #plots
 plot(l.model_close)
 ```
@@ -177,6 +171,11 @@ with(aprout1, round(cbind(which, rsq, adjr2, cp, bic), 3))
 
 ```
 
+Here we are looking which S&P daily trailing average close would be better predictive variable, 7 day moving average or 30 day moving average. From the model, it seems that 7 day trailing closing average is better, based on all indicators, rsq, adjr2, cp and bic. 
+```{r}
+# SP500 DATA?
+```
+
 we are looking for the potential relationship between oil price and flower sales. Since transportation cost would affect flower price, which will influnce flower sales, we expect there's a negative relationship between oil price and flower sales. We use the Crude oil price data, since crude oil is refined to produce gasoline. 
 ```{r}
 #read in oil price data
@@ -205,7 +204,6 @@ There seems to be a negative relationship between flower sales against oil price
 # linear model
 fit_oil1 <- lm(Net ~ `Price.Close`, data = oil_combo)
 summary(fit_oil1)
-anova(fit_oil1)
 
 #plots
 plot(fit_oil1)
@@ -214,7 +212,6 @@ For the linear model, the price is significant. However, only 7.83% of the varia
 ```{r}
 fit_oil2 <- lm(Net ~ I(`Price.Close`)+ I(`Price.Close`^2), data = oil_combo)
 summary(fit_oil2)
-anova(fit_oil2)
 
 #plots
 plot(fit_oil2)
@@ -247,8 +244,6 @@ Let's build the linear model
 ```{r}
 fit_hershey <- lm(hershey_combo$Net ~ hershey_combo$open)
 summary(fit_hershey)
-anova(fit_hershey)
-
 #plots
 plot(fit_hershey)
 ```
@@ -257,8 +252,6 @@ From both the plots and the model, there isn't a strong evidence showing that th
 ```{r}
 fit_hershey2 <- lm(Net ~ I(open) + I(open^2), data =hershey_combo)
 summary(fit_hershey2)
-anova(fit_hershey2)
-
 #plots
 plot(fit_hershey2)
 ```
@@ -271,11 +264,7 @@ all_data$Date <- as.Date(all_data$Date, format = "%m/%d/%Y")
 
 fullmodel <- lm(Net ~ Close +Date+ Open + avg7_day+ avg30_day+avg_temp + sum_precip + Oil + Hershey, data = all_data)
 summary(fullmodel)
-
 str(all_data)
-
-anova(fullmodel)
-
 
 ```
 
@@ -291,9 +280,10 @@ summary(newmodel)
 
 ```{r}
 plot(newmodel)
+
+
 ```
 
-Now we divide the whole dataset into two parts - training_set and test_set. The training set is from 4/5 to 6/6 and the test set is from 9/20 to 10/3. 
 ```{r}
 training_set <- all_data[1:43,]
 
@@ -310,47 +300,18 @@ delta <- test_set[,1] - predictions
 
 (msep <- sum((delta)^2)/length(test_set[,1]))
 
+
 ```
 The training set doesn't predict the value for the test set well. This may be because of the seasonality of the flower industry. 
 
 
 ```{r}
-
-
 pairs(all_data[,c(6,15)])
-#test for multicolinearity between predictors
 vif(newmodel)
-#test for normality 
-shapiro.test(residuals(newmodel))
-
-#test for heteroskedacity
-df <- data.frame(x = all_data$Oil, y = all_data$Net, Oil = ifelse(all_data$Oil <= median(all_data$Oil), "small", "large"))
-
-bf.test(y ~ Oil, data = df)
-
-df2 <- data.frame(x = all_data$Close, y = all_data$Net, Close = ifelse(all_data$Close <= median(all_data$Close), "small", "large"))
-
-bf.test(y ~ Close, data = df2)
-
-#check for correlated errors 
-plot(1:length(all_data$Date), residuals(newmodel))
-durbinWatsonTest(newmodel)
 
 ```
 There is moderate evidence of multicolinearity between the closing price of the S&P 500 and the price of crude oil. 
 
-Shapiro-Wilk test for normality rejects null hypothesis that errors are normally distributed. 
-
-This lead us to use the Brown-Forsythe test to test for heteroskedacity, which works well when the normality assumption is violated. The p-value for the price of crude oil was not statistically significant so we conclude that the errors have constant variance. 
-The p-value for the S&P Close was statistically significant so the variance of the errors are not equal in this case. 
-
-The time series plot of the error terms show a pattern and suggests they may be correlated. The Durbin-Watson Test supports this conclusion with a p-value of 0.004 we can reject the null hypothesis that the error terms are not correlated. 
-
-
-
-
-
-
 ##Conclusions
 
-Current data-set is sparse and some of the association that may exist, are not strongly apparent because of it. Currently we are in the process or trying to acquire more data. with couple of years worth of data, we could investigate if there are any associations with holidays or other seasonal trends. We would also be able to apply time series based methods, once we learn to apply them. After running informal and formal diagnostics on our linear model, we conclude that a linear model may not be the best for this data. Our tests showed evidence of multicollinearity in the predictor variables, a violation of the normality assumption and constant variance, and the errors are correlated. We'd like to revisit this data set in the future when we have more observations and have learned time-series modeling. 
+Current data-set is sparse and some of the association that may exist, are not strongly apparent because of it. Currently we are in the process or trying to acquire more data. with couple of years worth of data, we could investigate if there are any associations with holidays or other seasonal trends. We would also be able to apply time series based methods, once we learn to apply them. 
