@@ -8,6 +8,8 @@ output: html_document
 In this project, we're using sales data from Safeway Eastern's floral department. This data only shows the flowers/bouquets sold at Safeway Eastern supermarkets that were bought from Intergreen USA, a flower importing company which supplies different supermarkets across the US. There are a total of 9 distinct products sold and the sales occurred between April and October 2017. 
 
 ##Literature Review/ Background and Methods 
+The Florist industry in the US retails cut flowers, floral arrangements and potted plants. Industry operators purchase these goods from domestic and international flower farms and wholesalers and sell them to the general public. This industry excludes operators that primarily function as electronic shopping websites and mail-order companies. Discounted prices for comparable goods online and in supermarkets have led consumers to buy fewer flowers from industry operators. So the supermarkets and retail florist industry is actually growing. 
+
 
 ##Research Question(s) 
 
@@ -17,20 +19,15 @@ Oil price is another variable that we expect to have a negative relationship wit
 Chocolate selling
 Weather, average temperature, wind speed, precipitation 
 
+
 ##Data Collection & Experimental Design
 
 Data was provided by Safeway Eastern
 
-Weather Data source was https://www.wunderground.com/history/airport/KDCA
 
-S&P 500 data source was https://finance.yahoo.com/quote/%5EGSPC/history?period1=1480482000&period2=1512018000&interval=1d&filter=history&frequency=1d
+##Data Analysis 
 
-Oil price source was http://www.fedprimerate.com/crude-oil-price-history.htm
-
-Hershey stock price data was http://www.nasdaq.com/symbol/hsy/historical
-
-```{r, include=FALSE}
-
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 library('plyr')
 library('bit64')
 library('dplyr')
@@ -39,20 +36,18 @@ library('ggplot2')
 library('data.table')
 library('leaps')
 library('minpack.lm')
+library('xts')
+library('lmtest')
+library('onewaytests')
+library('car')
 
+project_dir <- getwd()
+setwd(project_dir)
 ```
 
-
-
-
-##Data Analysis 
-
 The code below imports the flower sales data and combines it with the S&P data.
+
 ```{r}
-
-
-setwd("C:/Users/Holex/Desktop/Stats_Project")
-
 #Sidenote: I saved excel file as a txt before reading it as a table
 flower_data <- read.table("flower_data.txt", header = TRUE)
 flower_data_apr <- fread("april_june.csv", header = TRUE)
@@ -109,6 +104,7 @@ The relationship between net sales and adjusted close and net sales and open loo
 ```{r}
 l.model_close <- lm(results$Net ~ results$`Adj Close`)
 summary(l.model_close)
+anova(l.model_close)
 #plots
 plot(l.model_close)
 ```
@@ -174,16 +170,15 @@ with(aprout1, round(cbind(which, rsq, adjr2, cp, bic), 3))
 
 ```
 
-Here we are looking which S&P daily trailing average close would be better predictive variable, 7 day moving average or 30 day moving average. From the model, it seems that 7 day trailing closing average is better, based on all indicators, rsq, adjr2, cp and bic. 
-```{r}
-# SP500 DATA?
-```
-
 we are looking for the potential relationship between oil price and flower sales. Since transportation cost would affect flower price, which will influnce flower sales, we expect there's a negative relationship between oil price and flower sales. We use the Crude oil price data, since crude oil is refined to produce gasoline. 
 ```{r}
 #read in oil price data
 oil_info <- fread("oil_price.csv")
 oil_info$Date <- as.Date(oil_info$Date, format = "%m/%d/%Y")
+oil_info <- as.xts(oil_info)
+d <- merge(oil_info, xts(,seq(start(oil_info),end(oil_info),"days")))
+oil_info <- na.locf(d)
+oil_info <- data.frame(Date = index(oil_info),coredata(oil_info))
 
 #change column name so i can do a join
 date3_net <- merge(date_net, date2_net, all = TRUE)
@@ -194,25 +189,30 @@ oil_combo$Date <- as.character(oil_combo$Date)
 
 Let's look at the plot of flower sales against oil price.
 ```{r}
-plot(oil_combo$`Price@Close`,oil_combo$Net)
+plot(oil_combo$`Price.Close`,oil_combo$Net)
 ```
-There seems to be a negative relationship between flower sales against oil price. The three points that are outliers are on 5/5, 9/22, and 9/29, which could be due to other factoers such as weather and season. Now let's see if there's a linear relationshp between oil price and flower sales.
+There seems to be a negative relationship between flower sales against oil price if ignore the weeks when oil price is $46.22 (the week from 5/5 to 5/11). We can only get weekly oil price so we estimate oil prices are the same the whole week. That's why the price here seems like a categorical predictor. The week of 5/5 doesn't follow the estimation that lower oil price ha higher flower sales, which could be due to other factoers such as weather and season. Now let's see if there's a linear relationshp between oil price and flower sales.
 
 
 ```{r}
-# oil_combo2 <- na.omit(oil_combo)
-fit_oil1 <- lm(Net ~ `Price@Close`, data = oil_combo)
+# linear model
+fit_oil1 <- lm(Net ~ `Price.Close`, data = oil_combo)
 summary(fit_oil1)
-
-fit_oil2 <- lm(log(Net) ~ `Price@Close`, data = oil_combo)
-summary(fit_oil2)
+anova(fit_oil1)
 
 #plots
 plot(fit_oil1)
-plot(fit_oil2)
-
 ```
-Compare the linear regression model and log regression model, we found that the log regression model has a higher adjusted R-squared value has a lower p-value.
+For the linear model, the price is significant. However, only 7.83% of the variance can be explained by the model, which is relatively low. we would like to find a model that fits better to the data. Since the outline of the data looks like it's a polynomial, let's try to fit the polynomial model.
+```{r}
+fit_oil2 <- lm(Net ~ I(`Price.Close`)+ I(`Price.Close`^2), data = oil_combo)
+summary(fit_oil2)
+anova(fit_oil2)
+
+#plots
+plot(fit_oil2)
+```
+It seems the polynomial model fits the data better than the linear model since the adjusted r-squared is higher than the linear model's. Also, all coefficients are siginificant. From the QQ plot, the residuals have a slight positively skewed distribution, however, the distribution is not strongly skewed so we don't need to make a transformation of the data. Compare the linear regression model and the polynomial regression model, we found that the polynomial regression model has a higher adjusted R-squared value and has a lower p-value.
 
 
 We are also interensted in the the relationship between chocolate industry performance and flower sales since chocolate and flowers can be complementary goods. We expect a positive association between chocolate sales and flower sales. The Hershey Company is the largest chocolate manufacturer in North America and has 21.2% market share in the chocolate industry, so we are using Hershey's data. Becuase we are not able to get Hershey's daily sales data, we are comparing Hershey's stock price to the flower sales.
@@ -240,12 +240,123 @@ Let's build the linear model
 ```{r}
 fit_hershey <- lm(hershey_combo$Net ~ hershey_combo$open)
 summary(fit_hershey)
+anova(fit_hershey)
+
 #plots
 plot(fit_hershey)
 ```
-From both the plots and the model, there isn't a strong evidence showing that there's a relationship between Hershey's stock price and the flower sales.
+From both the plots and the model, there isn't a strong evidence showing that there's a linear relationship between Hershey's stock price and the flower sales. However, the plot looks there's a slight polynomial relationship between stock price and flower sales. So let's try polynomial model.
+
+```{r}
+fit_hershey2 <- lm(Net ~ I(open) + I(open^2), data =hershey_combo)
+summary(fit_hershey2)
+anova(fit_hershey2)
+
+#plots
+plot(fit_hershey2)
+```
+It seems the polynomial model fits much better than the linear model. all coefficients are significant and 17.97% of the variance can be explained by the model.
+
+
+```{r}
+all_data <- fread("all_data.csv", header = TRUE)
+all_data$Date <- as.Date(all_data$Date, format = "%m/%d/%Y")
+
+fullmodel <- lm(Net ~ Close +Date+ Open + avg7_day+ avg30_day+avg_temp + sum_precip + Oil + Hershey, data = all_data)
+summary(fullmodel)
+
+str(all_data)
+
+anova(fullmodel)
+
+
+```
+
+ 
+```{r}
+stepAIC(fullmodel, direction = "backward")
+```
+
+```{r}
+newmodel <- lm(Net ~ Close + Oil, data = all_data)
+summary(newmodel)
+```
+
+```{r}
+plot(newmodel)
+```
+
+Now we divide the whole dataset into two parts - training_set and test_set. The training set is from 4/5 to 6/6 and the test set is from 9/20 to 10/3. 
+```{r}
+training_set <- all_data[1:43,]
+
+test_set <- all_data[44:53,c(2,6, 15)]
+
+
+training_model <- lm(Net ~ Close + Oil, data = training_set)
+summary(training_model)
+anova(training_model)
+
+predictions <- predict(training_model, test_set[,c(2,3)])
+
+delta <- test_set[,1] - predictions
+
+(msep <- sum((delta)^2)/length(test_set[,1]))
+
+```
+The training set doesn't predict the value for the test set well. This may be because of the seasonality of the flower industry. 
+
+
+```{r}
+
+
+pairs(all_data[,c(6,15)])
+#test for multicolinearity between predictors
+vif(newmodel)
+#test for normality 
+shapiro.test(residuals(newmodel))
+
+#test for heteroskedacity
+df <- data.frame(x = all_data$Oil, y = all_data$Net, Oil = ifelse(all_data$Oil <= median(all_data$Oil), "small", "large"))
+
+bf.test(y ~ Oil, data = df)
+
+df2 <- data.frame(x = all_data$Close, y = all_data$Net, Close = ifelse(all_data$Close <= median(all_data$Close), "small", "large"))
+
+bf.test(y ~ Close, data = df2)
+
+#check for correlated errors 
+plot(1:length(all_data$Date), residuals(newmodel))
+durbinWatsonTest(newmodel)
+
+```
+There is moderate evidence of multicolinearity between the closing price of the S&P 500 and the price of crude oil. 
+
+Shapiro-Wilk test for normality rejects null hypothesis that errors are normally distributed. 
+
+This lead us to use the Brown-Forsythe test to test for heteroskedacity, which works well when the normality assumption is violated. The p-value for the price of crude oil was not statistically significant so we conclude that the errors have constant variance. 
+The p-value for the S&P Close was statistically significant so the variance of the errors are not equal in this case. 
+
+The time series plot of the error terms show a pattern and suggests they may be correlated. The Durbin-Watson Test supports this conclusion with a p-value of 0.004 we can reject the null hypothesis that the error terms are not correlated. 
+
+
+
+
 
 
 ##Conclusions
 
-Current data-set is sparse and some of the association that may exist, are not strongly apparent because of it. Currently we are in the process or trying to acquire more data. with couple of years worth of data, we could investigate if there are any associations with holidays or other seasonal trends. We would also be able to apply time series based methods, once we learn to apply them. 
+Current data-set is sparse and some of the association that may exist, are not strongly apparent because of it. Currently we are in the process or trying to acquire more data. with couple of years worth of data, we could investigate if there are any associations with holidays or other seasonal trends. We would also be able to apply time series based methods, once we learn to apply them. After running informal and formal diagnostics on our linear model, we conclude that a linear model may not be the best for this data. Our tests showed evidence of multicollinearity in the predictor variables, a violation of the normality assumption and constant variance, and the errors are correlated. We'd like to revisit this data set in the future when we have more observations and have learned time-series modeling. 
+
+
+## Works Cited
+
+Weather Data source https://www.wunderground.com/history/airport/KDCA
+
+S&P 500 data source  https://finance.yahoo.com/quote/%5EGSPC/history?period1=1480482000&period2=1512018000&interval=1d&filter=history&frequency=1d
+
+Oil price source http://www.fedprimerate.com/crude-oil-price-history.htm
+
+Hershey stock price data http://www.nasdaq.com/symbol/hsy/historical
+
+Florists in the US http://clients1.ibisworld.com.baypath.idm.oclc.org/reports/us/industry/default.aspx?entid=1096
