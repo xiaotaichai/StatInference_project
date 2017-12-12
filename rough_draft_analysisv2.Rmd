@@ -44,6 +44,9 @@ library('data.table')
 library('leaps')
 library('minpack.lm')
 library('xts')
+library('lmtest')
+library('onewaytests')
+library('car')
 
 project_dir <- getwd()
 setwd(project_dir)
@@ -268,11 +271,11 @@ all_data$Date <- as.Date(all_data$Date, format = "%m/%d/%Y")
 
 fullmodel <- lm(Net ~ Close +Date+ Open + avg7_day+ avg30_day+avg_temp + sum_precip + Oil + Hershey, data = all_data)
 summary(fullmodel)
-<<<<<<< HEAD
+
 str(all_data)
-=======
+
 anova(fullmodel)
->>>>>>> 62b6c56eb9a5c428fb1aa7c72eac4c3ad21b59a3
+
 
 ```
 
@@ -312,11 +315,41 @@ The training set doesn't predict the value for the test set well. This may be be
 
 
 ```{r}
+
+
 pairs(all_data[,c(6,15)])
+#test for multicolinearity between predictors
 vif(newmodel)
+#test for normality 
+shapiro.test(residuals(newmodel))
+
+#test for heteroskedacity
+df <- data.frame(x = all_data$Oil, y = all_data$Net, Oil = ifelse(all_data$Oil <= median(all_data$Oil), "small", "large"))
+
+bf.test(y ~ Oil, data = df)
+
+df2 <- data.frame(x = all_data$Close, y = all_data$Net, Close = ifelse(all_data$Close <= median(all_data$Close), "small", "large"))
+
+bf.test(y ~ Close, data = df2)
+
+#check for correlated errors 
+plot(1:length(all_data$Date), residuals(newmodel))
+durbinWatsonTest(newmodel)
 
 ```
 There is moderate evidence of multicolinearity between the closing price of the S&P 500 and the price of crude oil. 
+
+Shapiro-Wilk test for normality rejects null hypothesis that errors are normally distributed. 
+
+This lead us to use the Brown-Forsythe test to test for heteroskedacity, which works well when the normality assumption is violated. The p-value for the price of crude oil was not statistically significant so we conclude that the errors have constant variance. 
+The p-value for the S&P Close was statistically significant so the variance of the errors are not equal in this case. 
+
+The time series plot of the error terms show a pattern and suggests they may be correlated. The Durbin-Watson Test supports this conclusion with a p-value of 0.004 we can reject the null hypothesis that the error terms are not correlated. 
+
+
+
+
+
 
 ##Conclusions
 
